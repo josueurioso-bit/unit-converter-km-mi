@@ -1,225 +1,316 @@
-// Unit Converter (km ↔ mi)
-// Built like a mini data pipeline: input → validate → transform → present → log.
+:root {
+  --bg: #0b0f1a;
+  --card: #121a2b;
+  --card-2: #0f1626;
+  --text: #e8eefc;
+  --muted: #a7b2cc;
+  --border: rgba(255, 255, 255, 0.08);
+  --shadow: rgba(0, 0, 0, 0.35);
 
-const KM_TO_MI = 0.621371;
-const MI_TO_KM = 1.60934;
-const HISTORY_LIMIT = 5;
+  --primary: #6ea8ff;
+  --primary-2: #3f7cff;
 
-// Elements
-const form = document.getElementById("converterForm");
-const valueInput = document.getElementById("valueInput");
+  --good: #65d6a6;
+  --bad: #ff6b6b;
 
-const resultPanel = document.getElementById("resultPanel");
-const errorPanel = document.getElementById("errorPanel");
-const errorText = document.getElementById("errorText");
-
-const directionBadge = document.getElementById("directionBadge");
-const timestampText = document.getElementById("timestampText");
-const inputPretty = document.getElementById("inputPretty");
-const outputPretty = document.getElementById("outputPretty");
-const formulaText = document.getElementById("formulaText");
-
-const historyBody = document.getElementById("historyBody");
-const resetBtn = document.getElementById("resetBtn");
-const clearHistoryBtn = document.getElementById("clearHistoryBtn");
-
-// Utilities
-function nowTimeLabel() {
-  const d = new Date();
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  --radius: 16px;
 }
 
-function formatNumber(n, decimals = 2) {
-  // Keep it simple and predictable for this assessment
-  return Number(n).toFixed(decimals);
+* {
+  box-sizing: border-box;
 }
 
-function getDirection() {
-  const selected = document.querySelector('input[name="direction"]:checked');
-  return selected ? selected.value : "km-to-mi";
+html,
+body {
+  height: 100%;
 }
 
-function normalizeNumericInput(raw) {
-  // Allow common human typing: spaces and commas
-  // "1,000.5" -> "1000.5"
-  return raw.replaceAll(" ", "").replaceAll(",", "");
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text);
+  background: radial-gradient(1000px 500px at 10% 10%, rgba(110, 168, 255, 0.20), transparent 60%),
+              radial-gradient(900px 550px at 90% 25%, rgba(101, 214, 166, 0.14), transparent 55%),
+              var(--bg);
 }
 
-function parseAndValidate(raw) {
-  const cleaned = normalizeNumericInput(raw);
-
-  if (cleaned.length === 0) {
-    return { ok: false, message: "Please enter a number to convert." };
-  }
-
-  // Prevent weird cases like just "." or "-"
-  if (cleaned === "." || cleaned === "-" || cleaned === "-.") {
-    return { ok: false, message: "That doesn't look like a complete number yet." };
-  }
-
-  const value = Number(cleaned);
-
-  if (!Number.isFinite(value)) {
-    return { ok: false, message: "Enter a valid numeric value (example: 10 or 10.5)." };
-  }
-
-  return { ok: true, value };
+.app {
+  width: min(920px, 92vw);
+  margin: 40px auto;
+  display: grid;
+  gap: 18px;
 }
 
-function convert(value, direction) {
-  if (direction === "km-to-mi") {
-    return {
-      inUnit: "km",
-      outUnit: "mi",
-      factor: KM_TO_MI,
-      outValue: value * KM_TO_MI,
-      badge: "km → mi",
-      formula: "miles = kilometers × 0.621371",
-    };
-  }
-
-  // mi-to-km
-  return {
-    inUnit: "mi",
-    outUnit: "km",
-    factor: MI_TO_KM,
-    outValue: value * MI_TO_KM,
-    badge: "mi → km",
-    formula: "kilometers = miles × 1.60934",
-  };
+.header h1 {
+  margin: 0;
+  letter-spacing: -0.02em;
+  font-size: clamp(28px, 4vw, 40px);
 }
 
-function showError(message) {
-  resultPanel.hidden = true;
-  errorPanel.hidden = false;
-  errorText.textContent = message;
+.subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
 }
 
-function showResult({ inputValue, inUnit, outValue, outUnit, badge, formula }) {
-  errorPanel.hidden = true;
-  resultPanel.hidden = false;
-
-  directionBadge.textContent = badge;
-  timestampText.textContent = `Updated ${nowTimeLabel()}`;
-
-  inputPretty.textContent = `${formatNumber(inputValue)} ${inUnit}`;
-  outputPretty.textContent = `${formatNumber(outValue)} ${outUnit}`;
-  formulaText.textContent = `Formula: ${formula} (rounded to 2 decimals)`;
+.subtitle.small {
+  font-size: 13px;
 }
 
-function makeHistoryRow(item) {
-  const tr = document.createElement("tr");
-
-  const tdTime = document.createElement("td");
-  tdTime.textContent = item.time;
-
-  const tdDir = document.createElement("td");
-  tdDir.textContent = item.badge;
-
-  const tdInput = document.createElement("td");
-  tdInput.textContent = `${formatNumber(item.inputValue)} ${item.inUnit}`;
-
-  const tdOutput = document.createElement("td");
-  tdOutput.textContent = `${formatNumber(item.outValue)} ${item.outUnit}`;
-
-  tr.appendChild(tdTime);
-  tr.appendChild(tdDir);
-  tr.appendChild(tdInput);
-  tr.appendChild(tdOutput);
-
-  return tr;
+.card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 65%),
+              var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 45px var(--shadow);
+  padding: 18px;
 }
 
-function renderHistory(history) {
-  historyBody.innerHTML = "";
-
-  if (history.length === 0) {
-    const tr = document.createElement("tr");
-    tr.className = "empty-row";
-    const td = document.createElement("td");
-    td.colSpan = 4;
-    td.textContent = "No conversions yet. Run one above 👆";
-    tr.appendChild(td);
-    historyBody.appendChild(tr);
-    return;
-  }
-
-  history.forEach((item) => {
-    historyBody.appendChild(makeHistoryRow(item));
-  });
+.form {
+  display: grid;
+  gap: 16px;
 }
 
-function loadHistory() {
-  try {
-    const raw = localStorage.getItem("conversionHistory");
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+.field label,
+.field legend {
+  font-weight: 600;
+  font-size: 14px;
 }
 
-function saveHistory(history) {
-  localStorage.setItem("conversionHistory", JSON.stringify(history));
+.field {
+  display: grid;
+  gap: 8px;
 }
 
-function pushHistoryItem(item) {
-  const history = loadHistory();
-  const next = [item, ...history].slice(0, HISTORY_LIMIT);
-  saveHistory(next);
-  renderHistory(next);
+input[type="text"] {
+  background: var(--card-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 12px;
+  font-size: 16px;
+  outline: none;
 }
 
-function clearHistory() {
-  saveHistory([]);
-  renderHistory([]);
+input[type="text"]:focus {
+  border-color: rgba(110, 168, 255, 0.55);
+  box-shadow: 0 0 0 4px rgba(110, 168, 255, 0.15);
 }
 
-// Events
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
+/* NEW: style the precision dropdown to match the input */
+select {
+  background: var(--card-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 12px;
+  font-size: 16px;
+  outline: none;
+}
 
-  const raw = valueInput.value;
-  const parsed = parseAndValidate(raw);
+select:focus {
+  border-color: rgba(110, 168, 255, 0.55);
+  box-shadow: 0 0 0 4px rgba(110, 168, 255, 0.15);
+}
 
-  if (!parsed.ok) {
-    showError(parsed.message);
-    return;
-  }
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
 
-  const direction = getDirection();
-  const result = convert(parsed.value, direction);
+.radios {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+}
 
-  showResult({
-    inputValue: parsed.value,
-    inUnit: result.inUnit,
-    outValue: result.outValue,
-    outUnit: result.outUnit,
-    badge: result.badge,
-    formula: result.formula,
-  });
+.radio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+}
 
-  pushHistoryItem({
-    time: nowTimeLabel(),
-    badge: result.badge,
-    inputValue: parsed.value,
-    inUnit: result.inUnit,
-    outValue: result.outValue,
-    outUnit: result.outUnit,
-  });
-});
+.radio input {
+  accent-color: var(--primary);
+}
 
-resetBtn.addEventListener("click", () => {
-  valueInput.value = "";
-  valueInput.focus();
-  resultPanel.hidden = true;
-  errorPanel.hidden = true;
-});
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
-clearHistoryBtn.addEventListener("click", () => {
-  clearHistory();
-});
+.btn {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform 0.05s ease, border-color 0.2s ease, background 0.2s ease;
+}
 
-// Init
-renderHistory(loadHistory());
-valueInput.focus();
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn.primary {
+  background: linear-gradient(180deg, rgba(110, 168, 255, 0.35), rgba(63, 124, 255, 0.18));
+  border-color: rgba(110, 168, 255, 0.35);
+}
+
+.btn.primary:hover {
+  border-color: rgba(110, 168, 255, 0.60);
+}
+
+.btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.btn.small {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.message {
+  margin-top: 4px;
+}
+
+.result,
+.error {
+  border-radius: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.error {
+  border-color: rgba(255, 107, 107, 0.35);
+  background: rgba(255, 107, 107, 0.08);
+}
+
+.result-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: rgba(101, 214, 166, 0.14);
+  border: 1px solid rgba(101, 214, 166, 0.25);
+  color: var(--good);
+  font-weight: 700;
+}
+
+.timestamp {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.result-main {
+  margin-top: 10px;
+}
+
+.result-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 18px;
+}
+
+.arrow {
+  color: var(--muted);
+}
+
+.output {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.formula {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.history-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.history-head h2 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+.table-wrap {
+  margin-top: 12px;
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.table th {
+  color: var(--muted);
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.empty-row td {
+  color: var(--muted);
+  text-align: center;
+  padding: 16px 12px;
+}
+
+.history-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.footer {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  padding: 8px 0 20px;
+}
