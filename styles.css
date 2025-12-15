@@ -97,6 +97,22 @@ input[type="text"]:focus {
   box-shadow: 0 0 0 4px rgba(110, 168, 255, 0.15);
 }
 
+/* NEW: style the precision dropdown to match the input */
+select {
+  background: var(--card-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 12px;
+  font-size: 16px;
+  outline: none;
+}
+
+select:focus {
+  border-color: rgba(110, 168, 255, 0.55);
+  box-shadow: 0 0 0 4px rgba(110, 168, 255, 0.15);
+}
+
 .hint {
   margin: 0;
   color: var(--muted);
