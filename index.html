@@ -26,7 +26,17 @@
               autocomplete="off"
               placeholder="e.g., 10.5"
             />
-            <p class="hint">Tip: Decimals are fine. We’ll round the result to 2 decimals.</p>
+            <p class="hint">Tip: Decimals are fine. We’ll use your selected precision.</p>
+          </div>
+
+          <div class="field">
+            <label for="precisionSelect">Precision</label>
+            <select id="precisionSelect" name="precisionSelect">
+              <option value="2" selected>2 decimals</option>
+              <option value="3">3 decimals</option>
+              <option value="4">4 decimals</option>
+            </select>
+            <p class="hint">Controls rounding for the result and the history table.</p>
           </div>
 
           <fieldset class="field">
@@ -104,9 +114,7 @@
       </section>
 
       <footer class="footer">
-        <p>
-          Built as a small “data pipeline”: input → validate → transform → output.
-        </p>
+        <p>Built as a small “data pipeline”: input → validate → transform → output.</p>
       </footer>
     </main>
 
