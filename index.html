@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Unit Converter | km ↔ mi</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <main class="app">
+      <header class="header">
+        <h1>Unit Converter</h1>
+        <p class="subtitle">Kilometers ↔ Miles · clean inputs · clear outputs</p>
+      </header>
+
+      <section class="card">
+        <form id="converterForm" class="form" novalidate>
+          <div class="field">
+            <label for="valueInput">Value</label>
+            <input
+              id="valueInput"
+              name="valueInput"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              placeholder="e.g., 10.5"
+            />
+            <p class="hint">Tip: Decimals are fine. We’ll round the result to 2 decimals.</p>
+          </div>
+
+          <fieldset class="field">
+            <legend>Convert</legend>
+            <div class="radios">
+              <label class="radio">
+                <input type="radio" name="direction" value="km-to-mi" checked />
+                <span>Kilometers → Miles</span>
+              </label>
+
+              <label class="radio">
+                <input type="radio" name="direction" value="mi-to-km" />
+                <span>Miles → Kilometers</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="actions">
+            <button type="submit" class="btn primary">Convert</button>
+            <button type="button" id="resetBtn" class="btn ghost">Reset</button>
+          </div>
+
+          <div class="message" aria-live="polite" aria-atomic="true">
+            <div id="resultPanel" class="result" hidden>
+              <div class="result-top">
+                <span class="badge" id="directionBadge">km → mi</span>
+                <span class="timestamp" id="timestampText"></span>
+              </div>
+
+              <div class="result-main">
+                <div class="result-line">
+                  <span id="inputPretty">10 km</span>
+                  <span class="arrow">→</span>
+                  <span id="outputPretty" class="output">6.21 mi</span>
+                </div>
+                <p class="formula" id="formulaText"></p>
+              </div>
+            </div>
+
+            <div id="errorPanel" class="error" hidden>
+              <strong>Check your input</strong>
+              <p id="errorText">Please enter a valid number.</p>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="history-head">
+          <h2>Recent Conversions</h2>
+          <p class="subtitle small">Last 5 results (like a tiny audit trail).</p>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table" aria-label="Conversion history">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Direction</th>
+                <th>Input</th>
+                <th>Output</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody">
+              <tr class="empty-row">
+                <td colspan="4">No conversions yet. Run one above 👆</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="history-actions">
+          <button type="button" id="clearHistoryBtn" class="btn ghost small">Clear History</button>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <p>
+          Built as a small “data pipeline”: input → validate → transform → output.
+        </p>
+      </footer>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
